@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A simple to-do tracker for today, this week and this month. Your activities stay in your browser.">
+  <meta name="theme-color" content="#4f46e5">
+  <title>Focusline</title>
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Focusline: today, this week and this month">
+  <meta property="og:description" content="A simple, private to-do tracker. Your activities stay in your browser.">
+  <meta property="og:image" content="https://vikramkrajendra.github.io/FocusLine/docs/screenshot-desktop.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Focusline">
+  <meta name="twitter:description" content="A simple, private to-do tracker for today, this week and this month.">
+  <meta name="twitter:image" content="https://vikramkrajendra.github.io/FocusLine/docs/screenshot-desktop.png">
+  <link rel="icon" href="icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+
+    <header class="app-header">
+      <div class="header-text">
+        <p class="made-by">Made by Vikram</p>
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <h1>Focusline</h1>
+        </div>
+        <p id="today-label" class="subtitle"></p>
+        <p id="summary" class="summary"></p>
+      </div>
+      <button type="button" id="new-btn" class="btn primary new-btn">+ New activity</button>
+    </header>
+
+    <!-- First-run welcome (hidden once there are activities or it is dismissed) -->
+    <section id="welcome" class="card welcome" aria-labelledby="welcome-title" hidden>
+      <h2 id="welcome-title">Welcome to Focusline</h2>
+      <p class="welcome-text">Add what you need to do today, this week or this month. Mark each one done as you go. Everything stays in this browser.</p>
+      <div class="welcome-actions">
+        <button type="button" id="load-examples-btn" class="btn primary">Load 3 example activities</button>
+        <button type="button" id="dismiss-welcome-btn" class="btn ghost">Start empty</button>
+      </div>
+    </section>
+
+    <!-- Month picker: always visible, so future months can be reached from the dashboard -->
+    <div id="month-nav" class="month-nav" role="group" aria-label="Month shown on the dashboard">
+      <button type="button" id="month-prev" class="month-arrow" aria-label="Previous month">&lsaquo;</button>
+      <span id="month-name" class="month-name" aria-live="polite">This Month</span>
+      <button type="button" id="month-next" class="month-arrow" aria-label="Next month">&rsaquo;</button>
+      <button type="button" id="month-back" class="link-btn" hidden>Back to this month</button>
+    </div>
+
+    <!-- Dashboard -->
+    <section class="dashboard" aria-label="Dashboard">
+      <div id="stat-cards" class="stat-grid"></div>
+
+      <div class="dash-row">
+        <div class="card ring-card">
+          <h2>Overall progress</h2>
+          <div class="ring-wrap">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
+              <circle id="ring-progress" class="ring-fg" cx="60" cy="60" r="52"></circle>
+            </svg>
+            <div id="ring-text" class="ring-text">0%</div>
+          </div>
+        </div>
+
+        <div class="card bars-card">
+          <h2>Status by period</h2>
+          <div id="bar-chart"></div>
+          <div class="legend">
+            <button type="button" class="legend-btn" data-go-filter="completed"><i class="dot dot-completed"></i>Completed</button>
+            <button type="button" class="legend-btn" data-go-filter="pending"><i class="dot dot-pending"></i>Pending</button>
+            <button type="button" class="legend-btn" data-go-filter="overdue"><i class="dot dot-overdue"></i>Overdue</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Add / edit form (opened on demand) -->
+    <section class="card form-card" aria-labelledby="form-title" hidden>
+      <h2 id="form-title">Add an activity</h2>
+      <form id="task-form" novalidate>
+        <div class="field wide">
+          <label for="title">Activity</label>
+          <input id="title" type="text" maxlength="120" placeholder="e.g. Submit weekly report" required>
+          <p id="title-count" class="char-count"></p>
+          <p id="title-error" class="field-error" aria-live="polite"></p>
+        </div>
+        <div class="field">
+          <label for="due">Due date</label>
+          <input id="due" type="date">
+          <p id="due-error" class="field-error" aria-live="polite"></p>
+        </div>
+        <div class="field">
+          <label for="priority">Priority</label>
+          <select id="priority">
+            <option value="high">High</option>
+            <option value="medium" selected>Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <div class="field wide">
+          <label for="notes">Notes (optional)</label>
+          <textarea id="notes" rows="2" maxlength="500" placeholder="Any details..."></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" id="cancel-btn" class="btn ghost">Cancel</button>
+          <button type="submit" id="submit-btn" class="btn primary">Add activity</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Task list -->
+    <section class="card list-card" aria-label="Activities">
+      <nav id="horizon-tabs" class="tabs" aria-label="Time period">
+        <button type="button" class="tab" data-horizon="today">Today <span class="count" data-count="today" title="Activities in this view">0</span></button>
+        <button type="button" class="tab" data-horizon="week">This Week <span class="count" data-count="week" title="Activities in this view">0</span></button>
+        <button type="button" class="tab" data-horizon="month"><span class="tab-label">This Month</span> <span class="count" data-count="month" title="Activities in this view">0</span></button>
+        <button type="button" class="tab" data-horizon="all">All <span class="count" data-count="all" title="Activities in this view">0</span></button>
+      </nav>
+
+      <div id="filter-chips" class="chips" role="group" aria-label="Filter by status">
+        <button class="chip" data-filter="all">All</button>
+        <button class="chip" data-filter="pending">Pending</button>
+        <button class="chip" data-filter="completed">Completed</button>
+        <button class="chip" data-filter="overdue">Overdue</button>
+      </div>
+
+      <div class="list-tools">
+        <button type="button" id="clear-done-btn" class="link-btn clear-btn" disabled>Clear completed (0)</button>
+      </div>
+
+      <p id="result-count" class="sr-only" aria-live="polite"></p>
+
+      <ul id="task-list" class="task-list" aria-label="Activities"></ul>
+
+      <div id="empty-state" class="empty" hidden>
+        <p><strong>Nothing to show.</strong></p>
+        <p>Add an activity above to get started.</p>
+      </div>
+
+      <p class="hint">Overdue activities stay in every view until you complete them.</p>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>Your data stays in this browser. No tracking. <a href="https://github.com/vikramkrajendra/FocusLine/tree/main/todo-app">Source on GitHub</a></p>
+    <div class="footer-actions">
+      <button type="button" id="export-btn" class="link-btn">Export backup</button>
+      <label class="link-btn file-btn">Import backup
+        <input id="import-file" type="file" accept="application/json,.json">
+      </label>
+    </div>
+    <p id="backup-status" class="backup-status" aria-live="polite"></p>
+  </footer>
+
+  <!-- Undo message (shown after delete or clear completed) -->
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden>
+    <span id="toast-text"></span>
+    <button type="button" id="toast-undo" class="toast-undo">Undo</button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
